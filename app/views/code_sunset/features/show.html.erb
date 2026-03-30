@@ -1,0 +1,266 @@
+<section class="cs-page-header cs-page-header--feature">
+  <div>
+    <h2 class="cs-page-title cs-code"><%= @feature.key %></h2>
+    <p class="cs-page-copy">Start with the trend and latest events, then use the supporting context to decide whether this code path can be retired.</p>
+  </div>
+  <div class="cs-page-actions cs-page-actions--feature">
+    <%= status_badge(@summary.status) if @summary %>
+    <%= link_to removal_prompt_path_for(@feature), class: "cs-button cs-button--ai" do %>
+      <span class="cs-button__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3.75l1.5 4.5 4.5 1.5-4.5 1.5-1.5 4.5-1.5-4.5-4.5-1.5 4.5-1.5L12 3.75z"></path>
+          <path d="M18.75 14.25l.75 2.25 2.25.75-2.25.75-.75 2.25-.75-2.25-2.25-.75 2.25-.75.75-2.25z"></path>
+        </svg>
+      </span>
+      <span><%= @removal_prompt_artifact ? "Regenerate Removal Prompt" : "Generate Removal Prompt" %></span>
+    <% end %>
+    <%= link_to "Back to Features", filter_path_for(features_path), class: "cs-inline-link" %>
+  </div>
+</section>
+
+<section class="cs-grid cs-grid--feature-summary">
+  <article class="cs-stat">
+    <p class="cs-stat__label">Owner</p>
+    <p class="cs-stat__value"><%= @feature.owner.presence || "Unassigned" %></p>
+  </article>
+  <article class="cs-stat">
+    <p class="cs-stat__label">Status</p>
+    <p class="cs-stat__value"><%= status_badge(@summary.status) if @summary %></p>
+  </article>
+  <article class="cs-stat">
+    <p class="cs-stat__label">Last Seen</p>
+    <p class="cs-stat__value"><%= format_seen_at(@summary&.last_seen_at) %></p>
+  </article>
+  <article class="cs-stat">
+    <p class="cs-stat__label">Removal Score</p>
+    <p class="cs-stat__value"><%= removal_score_badge(@feature, @summary, label: (@summary&.score&.round(1) || 0).to_s) %></p>
+  </article>
+</section>
+
+<%= render_filter_bar(
+  form_url: feature_path(@feature.key),
+  reset_url: feature_path(@feature.key),
+  title: "Filter Feature Usage",
+  copy: "Narrow the trend, supporting signals, and recent event stream."
+) %>
+
+<% if @removal_prompt_artifact %>
+  <section class="cs-panel cs-panel--removal-prompt">
+    <div class="cs-panel__heading cs-panel__heading--prompt">
+      <div>
+        <h2>Removal Prompt</h2>
+        <p class="cs-panel__copy"><%= @removal_prompt_artifact.summary %></p>
+      </div>
+      <div class="cs-page-actions cs-page-actions--compact">
+        <button
+          type="button"
+          class="cs-button cs-button--ai"
+          data-copy-target="cs-removal-prompt"
+          data-copy-default-label="Copy Prompt"
+          data-copy-success-label="Copied"
+        >
+          <span class="cs-button__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3.75l1.5 4.5 4.5 1.5-4.5 1.5-1.5 4.5-1.5-4.5-4.5-1.5 4.5-1.5L12 3.75z"></path>
+            </svg>
+          </span>
+          <span>Copy Prompt</span>
+        </button>
+        <%= link_to "Hide", removal_prompt_reset_path_for(@feature), class: "cs-inline-link" %>
+      </div>
+    </div>
+
+    <% if @removal_prompt_artifact.warnings.any? %>
+      <div class="cs-removal-prompt__warnings">
+        <% @removal_prompt_artifact.warnings.each do |warning| %>
+          <p class="cs-removal-prompt__warning"><strong>Warning:</strong> <%= warning %></p>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="cs-removal-prompt">
+      <section class="cs-removal-prompt__section">
+        <div class="cs-panel__heading">
+          <div>
+            <h2>Prompt</h2>
+          </div>
+        </div>
+        <pre id="cs-removal-prompt" class="cs-markdown-block"><code><%= @removal_prompt_artifact.prompt_markdown %></code></pre>
+      </section>
+
+      <section class="cs-removal-prompt__section">
+        <div class="cs-panel__heading">
+          <div>
+            <h2>Evidence Pack</h2>
+          </div>
+        </div>
+        <pre class="cs-markdown-block"><code><%= @removal_prompt_artifact.evidence_markdown %></code></pre>
+      </section>
+    </div>
+  </section>
+<% end %>
+
+<section class="cs-detail-layout">
+  <div class="cs-stack">
+    <section class="cs-panel">
+      <div class="cs-panel__heading">
+        <div>
+          <h2>Usage Trend</h2>
+        </div>
+      </div>
+      <%= usage_chart(@usage_series) %>
+    </section>
+
+    <section class="cs-panel">
+      <div class="cs-panel__heading">
+        <div>
+          <h2>Recent Events</h2>
+        </div>
+        <% if @recent_events_total_count.positive? %>
+          <% start_event = ((@recent_events_page - 1) * @recent_events_per_page) + 1 %>
+          <% end_event = [@recent_events_page * @recent_events_per_page, @recent_events_total_count].min %>
+          <span class="cs-panel__count"><%= "#{start_event}-#{end_event} of #{human_count(@recent_events_total_count)}" %></span>
+        <% end %>
+      </div>
+      <div class="cs-table-wrap">
+        <table class="cs-table cs-table--compact">
+        <thead>
+          <tr>
+            <th>Occurred At</th>
+            <th>Actor</th>
+            <th>Context</th>
+            <th>Runtime</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @recent_events.each do |event| %>
+            <tr>
+              <td><%= format_seen_at(event.occurred_at) %></td>
+              <td>
+                <div class="cs-stacked-meta">
+                  <span class="cs-stacked-meta__primary cs-code"><%= event.display_org_identifier || "-" %></span>
+                  <span class="cs-stacked-meta__secondary cs-code">User <%= event.display_user_identifier || "-" %></span>
+                </div>
+              </td>
+              <td><span class="cs-code cs-code--wrap"><%= event.request_path.presence || event.job_class.presence || event.source %></span></td>
+              <td>
+                <div class="cs-stacked-meta">
+                  <span class="cs-stacked-meta__primary"><%= event.app_env.presence || "-" %></span>
+                  <span class="cs-stacked-meta__secondary cs-code"><%= event.app_version.presence || "-" %></span>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+          <% if @recent_events.empty? %>
+            <tr>
+              <td colspan="4" class="cs-subtle">No events matched the selected filters.</td>
+            </tr>
+          <% end %>
+        </tbody>
+        </table>
+      </div>
+      <% if @recent_events_total_pages > 1 %>
+        <nav class="cs-pagination" aria-label="Recent events pagination">
+          <% if @recent_events_page > 1 %>
+            <%= pagination_link_for(@feature, "Previous", page: @recent_events_page - 1, current: false, filters: filters.except(:page), rel: "prev") %>
+          <% else %>
+            <span class="cs-pagination__link is-disabled">Previous</span>
+          <% end %>
+
+          <span class="cs-pagination__summary">Page <%= @recent_events_page %> of <%= @recent_events_total_pages %></span>
+
+          <% if @recent_events_page < @recent_events_total_pages %>
+            <%= pagination_link_for(@feature, "Next", page: @recent_events_page + 1, current: false, filters: filters.except(:page), rel: "next") %>
+          <% else %>
+            <span class="cs-pagination__link is-disabled">Next</span>
+          <% end %>
+        </nav>
+      <% end %>
+    </section>
+  </div>
+
+  <div class="cs-stack">
+    <section class="cs-panel">
+      <div class="cs-panel__heading">
+        <div>
+          <h2>Feature Overview</h2>
+        </div>
+      </div>
+      <div class="cs-meta-grid">
+        <div class="cs-meta-row">
+          <span class="cs-meta-row__label">Description</span>
+          <span><%= @feature.description.presence || "No description provided." %></span>
+        </div>
+        <div class="cs-meta-row">
+          <span class="cs-meta-row__label">Owner</span>
+          <span><%= @feature.owner.presence || "Unassigned" %></span>
+        </div>
+        <div class="cs-meta-row">
+          <span class="cs-meta-row__label">Sunset after days</span>
+          <span><%= @feature.sunset_after_days %></span>
+        </div>
+        <div class="cs-meta-row">
+          <span class="cs-meta-row__label">Remove after days unused</span>
+          <span><%= @feature.remove_after_days_unused %></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="cs-panel">
+      <div class="cs-panel__heading">
+        <div>
+          <h2>Supporting Signals</h2>
+        </div>
+      </div>
+      <div class="cs-breakdown-group">
+        <section class="cs-breakdown-block">
+          <h3 class="cs-breakdown-block__title">Top Orgs</h3>
+          <ol class="cs-list">
+            <% @top_orgs.each do |identifier, hits| %>
+              <li><span class="cs-code"><%= identifier %></span> • <%= human_count(hits) %> hits</li>
+            <% end %>
+            <% if @top_orgs.empty? %>
+              <li class="cs-subtle">No org usage in the current window.</li>
+            <% end %>
+          </ol>
+        </section>
+
+        <section class="cs-breakdown-block">
+          <h3 class="cs-breakdown-block__title">Top Users</h3>
+          <ol class="cs-list">
+            <% @top_users.each do |identifier, hits| %>
+              <li><span class="cs-code"><%= identifier %></span> • <%= human_count(hits) %> hits</li>
+            <% end %>
+            <% if @top_users.empty? %>
+              <li class="cs-subtle">No user usage in the current window.</li>
+            <% end %>
+          </ol>
+        </section>
+
+        <section class="cs-breakdown-block">
+          <h3 class="cs-breakdown-block__title">Request Paths</h3>
+          <ol class="cs-list">
+            <% @request_paths.each do |path, hits| %>
+              <li><span class="cs-code"><%= path %></span> • <%= human_count(hits) %> hits</li>
+            <% end %>
+            <% if @request_paths.empty? %>
+              <li class="cs-subtle">No request traffic captured in this window.</li>
+            <% end %>
+          </ol>
+        </section>
+
+        <section class="cs-breakdown-block">
+          <h3 class="cs-breakdown-block__title">Job Usage</h3>
+          <ol class="cs-list">
+            <% @job_usage.each do |job_class, hits| %>
+              <li><span class="cs-code"><%= job_class %></span> • <%= human_count(hits) %> hits</li>
+            <% end %>
+            <% if @job_usage.empty? %>
+              <li class="cs-subtle">No background job usage captured in this window.</li>
+            <% end %>
+          </ol>
+        </section>
+      </div>
+    </section>
+  </div>
+</section>

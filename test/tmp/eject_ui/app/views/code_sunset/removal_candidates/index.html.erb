@@ -1,0 +1,118 @@
+<section class="cs-page-header">
+  <div>
+    <h2 class="cs-page-title">Removal Queue</h2>
+    <p class="cs-page-copy">Review the safest candidates first, then work through the features that still need a final migration pass.</p>
+  </div>
+  <div class="cs-page-actions cs-page-actions--compact">
+    <%= link_to "Features", filter_path_for(features_path), class: "cs-inline-link" %>
+  </div>
+</section>
+
+<section class="cs-grid">
+  <article class="cs-stat">
+    <p class="cs-stat__label">Safe To Remove</p>
+    <p class="cs-stat__value"><%= human_count(@safe.count) %></p>
+    <p class="cs-stat__hint">Highest-confidence candidates.</p>
+  </article>
+  <article class="cs-stat">
+    <p class="cs-stat__label">Needs Review</p>
+    <p class="cs-stat__value"><%= human_count(@candidates.count) %></p>
+    <p class="cs-stat__hint">Still in the cooling-down window.</p>
+  </article>
+  <article class="cs-stat">
+    <p class="cs-stat__label">Total In Queue</p>
+    <p class="cs-stat__value"><%= human_count(@summaries.count) %></p>
+    <p class="cs-stat__hint">Visible in the current view.</p>
+  </article>
+</section>
+
+<%= render_filter_bar(
+  form_url: removal_candidates_path,
+  reset_url: removal_candidates_path,
+  title: "Filter Removal Queue",
+  copy: "Use the shared filters to narrow removal candidates before reviewing safe and cooling-down features."
+) %>
+
+<section class="cs-candidate-grid">
+  <section class="cs-panel">
+    <div class="cs-panel__heading">
+      <div>
+        <h2>Safe To Remove</h2>
+      </div>
+      <span class="cs-panel__count"><%= human_count(@safe.count) %> items</span>
+    </div>
+    <div class="cs-table-wrap">
+      <table class="cs-table cs-table--compact">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Last Seen</th>
+            <th>Signals</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @safe.each do |summary| %>
+            <tr>
+              <td><%= link_to summary.feature.key, filter_path_for(feature_path(summary.feature.key)), class: "cs-code" %></td>
+              <td><%= format_seen_at(summary.last_seen_at) %></td>
+              <td>
+                <div class="cs-stacked-meta">
+                  <span class="cs-stacked-meta__primary"><%= human_count(summary.hits_30d) %> hits in 30d</span>
+                  <span class="cs-stacked-meta__secondary"><%= human_count(summary.unique_orgs_count) %> orgs</span>
+                </div>
+              </td>
+              <td><%= removal_score_badge(summary.feature, summary, label: summary.score.round(1).to_s) %></td>
+            </tr>
+          <% end %>
+          <% if @safe.empty? %>
+            <tr>
+              <td colspan="4" class="cs-subtle">No features are safe to remove yet.</td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="cs-panel">
+    <div class="cs-panel__heading">
+      <div>
+        <h2>Candidate For Removal</h2>
+      </div>
+      <span class="cs-panel__count"><%= human_count(@candidates.count) %> items</span>
+    </div>
+    <div class="cs-table-wrap">
+      <table class="cs-table cs-table--compact">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Last Seen</th>
+            <th>Signals</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @candidates.each do |summary| %>
+            <tr>
+              <td><%= link_to summary.feature.key, filter_path_for(feature_path(summary.feature.key)), class: "cs-code" %></td>
+              <td><%= format_seen_at(summary.last_seen_at) %></td>
+              <td>
+                <div class="cs-stacked-meta">
+                  <span class="cs-stacked-meta__primary"><%= human_count(summary.hits_30d) %> hits in 30d</span>
+                  <span class="cs-stacked-meta__secondary"><%= human_count(summary.unique_orgs_count) %> orgs</span>
+                </div>
+              </td>
+              <td><%= removal_score_badge(summary.feature, summary, label: summary.score.round(1).to_s) %></td>
+            </tr>
+          <% end %>
+          <% if @candidates.empty? %>
+            <tr>
+              <td colspan="4" class="cs-subtle">No features are in the cooling-off window for removal.</td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>

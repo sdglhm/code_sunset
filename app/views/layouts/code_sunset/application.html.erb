@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Code Sunset</title>
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+
+  <%= yield :head %>
+
+  <%= stylesheet_link_tag "code_sunset/application", media: "all" %>
+  <%= javascript_include_tag "code_sunset/vendor/chart.umd.min", defer: true %>
+  <%= javascript_include_tag "code_sunset/application", defer: true %>
+</head>
+<body>
+  <div
+    class="cs-background"
+    aria-hidden="true"
+    style="background-image: url('<%= asset_path("code_sunset/topography.svg") %>');"
+  ></div>
+  <div class="cs-app">
+    <aside class="cs-sidebar">
+      <div class="cs-sidebar__brand">
+        <%= link_to root_path, class: "cs-brand-lockup", "aria-label": "Code Sunset dashboard" do %>
+          <%= image_tag "code_sunset/logo-light.png", alt: "Code Sunset", class: "cs-brand-mark" %>
+        <% end %>
+        <p class="cs-tagline">Clear runtime signals for the code you want to retire.</p>
+      </div>
+
+      <div class="cs-sidebar__section">
+        <p class="cs-sidebar__label">Navigate</p>
+        <nav class="cs-nav">
+          <%= sidebar_nav_link "Dashboard", root_path, icon: :dashboard %>
+          <%= sidebar_nav_link "Features", filter_path_for(features_path), icon: :features %>
+          <%= sidebar_nav_link "Removal Queue", filter_path_for(removal_candidates_path), icon: :removal_queue %>
+        </nav>
+      </div>
+
+      <footer class="cs-footer">
+        <p class="cs-footer__meta">Mounted at <span class="cs-code">/code_sunset</span></p>
+        Gem developed by <a href="https://sdglhm.com" target="_blank" rel="noopener noreferrer">sdglhm.com</a>
+      </footer>
+    </aside>
+
+    <div class="cs-shell">
+      <main class="cs-main">
+        <% if analytics_notice.present? %>
+          <section class="cs-panel cs-panel--notice">
+            <p><strong>Raw Event Window:</strong> <%= analytics_notice %></p>
+          </section>
+        <% end %>
+
+        <%= yield %>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

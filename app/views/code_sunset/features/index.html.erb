@@ -1,0 +1,88 @@
+<% active_count = @summaries.count { |summary| summary.status == "active" } %>
+<% removable_count = @summaries.count { |summary| %w[candidate_for_removal safe_to_remove].include?(summary.status) } %>
+
+<section class="cs-page-header">
+  <div>
+    <h2 class="cs-page-title">Features</h2>
+    <p class="cs-page-copy">Scan the inventory, then narrow it with filters when you need a closer look.</p>
+  </div>
+  <div class="cs-page-actions cs-page-actions--compact">
+    <% if filters_applied? %>
+      <%= link_to "Reset Filters", features_path, class: "cs-inline-link" %>
+    <% end %>
+  </div>
+</section>
+
+<section class="cs-grid">
+  <article class="cs-stat">
+    <p class="cs-stat__label">Features</p>
+    <p class="cs-stat__value"><%= human_count(@summaries.count) %></p>
+    <p class="cs-stat__hint">Visible in the current view.</p>
+  </article>
+  <article class="cs-stat">
+    <p class="cs-stat__label">Active</p>
+    <p class="cs-stat__value"><%= human_count(active_count) %></p>
+    <p class="cs-stat__hint">Still seeing traffic.</p>
+  </article>
+  <article class="cs-stat">
+    <p class="cs-stat__label">Review Soon</p>
+    <p class="cs-stat__value"><%= human_count(removable_count) %></p>
+    <p class="cs-stat__hint">Candidate or safe to remove.</p>
+  </article>
+</section>
+
+<%= render_filter_bar(
+  form_url: features_path,
+  reset_url: features_path,
+  title: "Filters",
+  copy: "Environment and dates use rollups where possible. Org, user, plan, internal, and custom metadata filters use retained raw events."
+) %>
+
+<section class="cs-panel">
+  <div class="cs-panel__heading">
+    <div>
+      <h2>Feature Inventory</h2>
+    </div>
+    <span class="cs-panel__count"><%= human_count(@summaries.count) %></span>
+  </div>
+  <p class="cs-panel__copy">Use this table to decide what needs inspection now, then open a feature for the full drill-down.</p>
+
+  <div class="cs-table-wrap">
+    <table class="cs-table cs-table--features">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Status</th>
+          <th>Last Seen</th>
+          <th>Activity</th>
+          <th>Orgs</th>
+          <th>Owner</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @summaries.each do |summary| %>
+          <tr>
+            <td><%= link_to summary.feature.key, filter_path_for(feature_path(summary.feature.key)), class: "cs-code" %></td>
+            <td><%= status_badge(summary.status) %></td>
+            <td><%= format_seen_at(summary.last_seen_at) %></td>
+            <td>
+              <div class="cs-metric-pair">
+                <span class="cs-metric-pair__item"><strong><%= human_count(summary.hits_7d) %></strong><span>7d</span></span>
+                <span class="cs-metric-pair__item"><strong><%= human_count(summary.hits_30d) %></strong><span>30d</span></span>
+              </div>
+            </td>
+            <td><%= human_count(summary.unique_orgs_count) %></td>
+            <td><%= summary.feature.owner.presence || "Unassigned" %></td>
+            <td><%= removal_score_badge(summary.feature, summary, label: summary.score.round(1).to_s) %></td>
+          </tr>
+        <% end %>
+        <% if @summaries.empty? %>
+          <tr>
+            <td colspan="7" class="cs-subtle">No features matched the current filters.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</section>

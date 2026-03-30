@@ -1,0 +1,13 @@
+/.bundle
+/pkg
+/vendor/bundle
+/*.gem
+/.rspec_status
+
+/spec/dummy/log/*
+!/spec/dummy/log/.keep
+/spec/dummy/tmp/*
+!/spec/dummy/tmp/.keep
+!/spec/dummy/tmp/pids
+/spec/dummy/tmp/pids/*
+!/spec/dummy/tmp/pids/.keep

@@ -1,0 +1,81 @@
+<section class="cs-panel">
+  <div class="cs-panel__heading">
+    <div>
+      <h2><%= title %></h2>
+    </div>
+    <% if filters_applied %>
+      <%= link_to "Clear", reset_url, class: "cs-inline-link" %>
+    <% end %>
+  </div>
+  <% if copy.present? %>
+    <p class="cs-panel__copy"><%= copy %></p>
+  <% end %>
+  <%= form_with url: form_url, method: :get, local: true do %>
+    <div class="cs-filter-shell">
+      <div class="cs-filters cs-filters--primary">
+        <div class="cs-field">
+          <label for="app_env">Environment</label>
+          <%= text_field_tag :app_env, current_filter_value(:app_env), placeholder: "production" %>
+        </div>
+        <div class="cs-field">
+          <label for="from">From</label>
+          <%= date_field_tag :from, current_filter_value(:from) %>
+        </div>
+        <div class="cs-field">
+          <label for="to">To</label>
+          <%= date_field_tag :to, current_filter_value(:to) %>
+        </div>
+        <div class="cs-filter-actions">
+          <%= submit_tag "Apply", class: "cs-button" %>
+          <% if filters_applied %>
+            <%= link_to "Reset", reset_url, class: "cs-inline-link" %>
+          <% end %>
+        </div>
+      </div>
+
+      <details class="cs-disclosure" <%= "open" if advanced_filters_open? %>>
+        <summary class="cs-disclosure__summary">More Filters</summary>
+        <div class="cs-filters cs-filters--secondary">
+          <div class="cs-field">
+            <label for="plan">Plan</label>
+            <%= text_field_tag :plan, current_filter_value(:plan), placeholder: "pro" %>
+          </div>
+          <div class="cs-field">
+            <label for="org_id">Org ID</label>
+            <%= text_field_tag :org_id, current_filter_value(:org_id) %>
+          </div>
+          <div class="cs-field">
+            <label for="user_id">User ID</label>
+            <%= text_field_tag :user_id, current_filter_value(:user_id) %>
+          </div>
+          <div class="cs-field">
+            <label for="paid_only">Paid Orgs Only</label>
+            <%= select_tag :paid_only, options_for_select([["Any", nil], ["Yes", true]], current_filter_value(:paid_only)), include_blank: false %>
+          </div>
+          <div class="cs-field">
+            <label for="exclude_internal">Exclude Internal</label>
+            <%= select_tag :exclude_internal, options_for_select([["No", nil], ["Yes", true]], current_filter_value(:exclude_internal)), include_blank: false %>
+          </div>
+          <% configured_custom_filters.each do |key, definition| %>
+            <div class="cs-field">
+              <label for="<%= key %>"><%= definition[:label] %></label>
+              <%= custom_filter_input_tag(key, definition) %>
+            </div>
+          <% end %>
+        </div>
+      </details>
+
+      <% if active_chips.any? %>
+        <div class="cs-chip-row" aria-label="Active filters">
+          <% active_chips.each do |chip| %>
+            <span class="cs-chip">
+              <span class="cs-chip__label"><%= chip[:label] %>:</span>
+              <span class="cs-chip__value"><%= chip[:value] %></span>
+              <%= link_to "Remove", chip[:clear_path], class: "cs-chip__remove", "aria-label": "Remove #{chip[:label]} filter" %>
+            </span>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</section>

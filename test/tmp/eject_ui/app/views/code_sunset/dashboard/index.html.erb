@@ -1,0 +1,123 @@
+<section class="cs-page-header">
+  <div>
+    <h2 class="cs-page-title">Overview</h2>
+    <p class="cs-page-copy">Start with what is active this week, then review what looks ready to retire.</p>
+  </div>
+  <div class="cs-page-actions cs-page-actions--compact">
+    <%= link_to "Features", features_path, class: "cs-inline-link" %>
+    <%= link_to "Review Removal Queue", removal_candidates_path, class: "cs-button cs-button--secondary" %>
+  </div>
+</section>
+
+<section class="cs-grid">
+  <article class="cs-stat">
+    <p class="cs-stat__label">Tracked Features</p>
+    <p class="cs-stat__value"><%= human_count(@summaries.count) %></p>
+    <p class="cs-stat__hint">Registered or observed.</p>
+  </article>
+  <article class="cs-stat">
+    <p class="cs-stat__label">Active Features</p>
+    <p class="cs-stat__value"><%= human_count(@active_count) %></p>
+    <p class="cs-stat__hint">Still seeing traffic.</p>
+  </article>
+  <article class="cs-stat">
+    <p class="cs-stat__label">Removable Features</p>
+    <p class="cs-stat__value"><%= human_count(@removable_count) %></p>
+    <p class="cs-stat__hint">Candidate or safe to remove.</p>
+  </article>
+</section>
+
+<section class="cs-overview-layout">
+  <article class="cs-panel">
+    <div class="cs-panel__heading">
+      <div>
+        <h2>Active This Week</h2>
+      </div>
+      <span class="cs-panel__count"><%= human_count(@recent_features.count) %> features</span>
+    </div>
+    <p class="cs-panel__copy">A quick pulse on the busiest legacy paths before you drill into the full feature inventory.</p>
+    <div class="cs-table-wrap">
+      <table class="cs-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Status</th>
+            <th>Hits 7d</th>
+            <th>Last Seen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @recent_features.each do |summary| %>
+            <tr>
+              <td><%= link_to summary.feature.key, feature_path(summary.feature.key), class: "cs-code" %></td>
+              <td><%= status_badge(summary.status) %></td>
+              <td><%= human_count(summary.hits_7d) %></td>
+              <td><%= format_seen_at(summary.last_seen_at) %></td>
+            </tr>
+          <% end %>
+          <% if @recent_features.empty? %>
+            <tr>
+              <td colspan="4" class="cs-subtle">No recent feature usage has been recorded yet.</td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <div class="cs-stack">
+    <article class="cs-panel">
+      <div class="cs-panel__heading">
+        <div>
+          <h2>Ready To Review</h2>
+        </div>
+        <span class="cs-panel__count"><%= human_count(@safe_to_remove.count) %> items</span>
+      </div>
+      <p class="cs-panel__copy">Highest-confidence removals based on inactivity, low breadth, and low paid usage.</p>
+
+      <ul class="cs-queue-list">
+        <% @safe_to_remove.each do |summary| %>
+          <li class="cs-queue-list__item">
+            <div class="cs-queue-list__body">
+              <%= link_to summary.feature.key, feature_path(summary.feature.key), class: "cs-code cs-queue-list__title" %>
+              <p class="cs-queue-list__meta">Last seen <%= format_seen_at(summary.last_seen_at) %></p>
+            </div>
+            <div class="cs-queue-list__aside">
+              <%= removal_score_badge(summary.feature, summary, label: "Score #{summary.score.round(1)}") %>
+            </div>
+          </li>
+        <% end %>
+        <% if @safe_to_remove.empty? %>
+          <li class="cs-subtle">Nothing is confidently removable yet.</li>
+        <% end %>
+      </ul>
+    </article>
+
+    <article class="cs-panel">
+      <div class="cs-panel__heading">
+        <div>
+          <h2>Cooling Down</h2>
+        </div>
+        <span class="cs-panel__count"><%= human_count(@cooling_down.count) %> items</span>
+      </div>
+      <p class="cs-panel__copy">Features that still have some recent traffic, but are trending toward the removal queue.</p>
+
+      <ul class="cs-queue-list">
+        <% @cooling_down.each do |summary| %>
+          <li class="cs-queue-list__item">
+            <div class="cs-queue-list__body">
+              <%= link_to summary.feature.key, feature_path(summary.feature.key), class: "cs-code cs-queue-list__title" %>
+              <p class="cs-queue-list__meta"><%= human_count(summary.hits_30d) %> hits in the last 30 days</p>
+            </div>
+            <div class="cs-queue-list__aside">
+              <%= removal_score_badge(summary.feature, summary, label: "Score #{summary.score.round(1)}") %>
+            </div>
+          </li>
+        <% end %>
+        <% if @cooling_down.empty? %>
+          <li class="cs-subtle">No features are currently in the cooldown queue.</li>
+        <% end %>
+      </ul>
+    </article>
+  </div>
+</section>
