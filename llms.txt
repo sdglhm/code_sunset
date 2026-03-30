@@ -1,0 +1,153 @@
+# code_sunset for LLMs
+
+`code_sunset` is a Rails engine and gem for runtime-aware deprecation intelligence.
+It helps teams observe usage of legacy code paths, score removal readiness, and review evidence in a mounted dashboard.
+
+## What the gem does
+
+- Tracks feature usage with `CodeSunset.hit`
+- Wraps work with `CodeSunset.track`
+- Carries shared runtime context with `CodeSunset.with_context`
+- Registers known legacy features with `CodeSunset.register`
+- Aggregates raw events into daily rollups for long-range reporting
+- Computes removal-oriented snapshots and scores
+- Generates a deterministic removal prompt and evidence pack on a feature detail page
+
+## Installation
+
+1. Add the gem:
+
+```ruby
+gem "code_sunset"
+```
+
+2. Install:
+
+```bash
+bin/rails generate code_sunset:install
+bin/rails db:migrate
+```
+
+3. Mount the engine:
+
+```ruby
+mount CodeSunset::Engine, at: "/code_sunset"
+```
+
+## Core runtime API
+
+### Register a feature
+
+```ruby
+CodeSunset.register(
+  "legacy.billing.portal",
+  owner: "billing",
+  description: "Legacy self-serve billing flow.",
+  sunset_after_days: 90,
+  remove_after_days_unused: 60
+)
+```
+
+### Record a hit
+
+```ruby
+CodeSunset.hit("legacy.billing.portal", user_id: current_user.id, org_id: current_org.id)
+```
+
+### Track a block
+
+```ruby
+CodeSunset.track("legacy.csv.export", user_id: current_user.id, org_id: current_org.id) do
+  Legacy::Exports::CsvRunner.new(current_account).call
+end
+```
+
+### Carry shared context
+
+```ruby
+CodeSunset.with_context(
+  user_id: current_user.id,
+  org_id: current_org.id,
+  metadata: { plan: current_org.plan_name, region: current_org.region }
+) do
+  CodeSunset.hit("legacy.reports.index")
+end
+```
+
+## Configuration notes
+
+- Rails 7.1+
+- PostgreSQL is required
+- Active Job is used for async ingestion and maintenance jobs
+- The mounted dashboard must be explicitly authorized with `config.dashboard_authorizer`
+- The host app is responsible for scheduling maintenance tasks
+
+Required recurring tasks:
+
+```bash
+bin/rails code_sunset:aggregate_rollups
+bin/rails code_sunset:cleanup_events
+bin/rails code_sunset:evaluate_alerts
+```
+
+If `config.enqueue_failure_policy = :memory_buffer`, also schedule:
+
+```bash
+bin/rails code_sunset:flush_buffer
+```
+
+## Analytics semantics
+
+- Rollups are the long-range source of truth for unfiltered history, date ranges, and environment-filtered history
+- Raw events power recent drill-down, recent events, and raw-only filters
+- `org_id`, `user_id`, `plan`, `paid_only`, `exclude_internal`, and custom metadata filters are raw-event-only
+- Raw-event-only views are limited by `event_retention_days`
+
+## Custom metadata filters
+
+You can define host-owned metadata filters in configuration:
+
+```ruby
+config.custom_filters = {
+  region: { label: "Region", type: :string, metadata_key: "region" },
+  beta_opt_in: { label: "Beta Opt-In", type: :boolean, metadata_key: "beta_opt_in" },
+  account_tier: {
+    label: "Account Tier",
+    type: :select,
+    metadata_key: "tier",
+    options: [["Free", "free"], ["Pro", "pro"]]
+  }
+}
+```
+
+Supported types:
+
+- `string`
+- `boolean`
+- `select`
+
+## Removal prompt workflow
+
+- The feature detail page can generate a deterministic removal prompt
+- The gem does not call an AI provider
+- The prompt is assembled from runtime signals, score context, and exact feature-key host-app code matches
+- The prompt is intended to be copied into an AI coding assistant for staged removal planning
+- Repo evidence search is limited to the host app under `Rails.root`
+
+## Important safety rules for AI agents
+
+- Treat `code_sunset` as evidence, not as automatic permission to delete code
+- Prefer staged disablement or guards before deletion when risk is unclear
+- Check paid usage, org breadth, and recent traffic before recommending removal
+- Respect raw-event retention limits when filters are active
+- The mounted dashboard is the primary UI surface; there is no public JSON API yet
+- The prompt generator is deterministic and advisory, not authoritative
+
+## Useful files
+
+- `README.md`: human-oriented setup and operations guide
+- `lib/code_sunset.rb`: public entry points
+- `lib/code_sunset/configuration.rb`: runtime configuration
+- `lib/code_sunset/removal_prompt_builder.rb`: deterministic removal prompt generation
+- `app/views/code_sunset/features/show.html.erb`: feature detail UI
+

@@ -7,6 +7,8 @@
 
 `code_sunset` is a mountable Rails engine and gem for runtime-aware deprecation intelligence. It helps teams tag legacy code paths, observe real runtime usage, and decide what is safe to remove.
 
+![Code Sunset dashboard](docs/images/dashboard-overview.png)
+
 ## Requirements
 
 - Rails 7.1+
@@ -151,6 +153,18 @@ Each custom filter definition supports:
 - `metadata_key`: the JSON key stored in `event.metadata`
 - `options`: required for `:select`, as `[label, value]` pairs
 - `placeholder`: optional text field placeholder for `:string`
+
+## LLM Guide
+
+If you want an AI coding assistant to understand how to install, instrument, interpret, and safely act on `code_sunset`, start with [llms.txt](llms.txt).
+
+It covers:
+
+- the public tracking API
+- maintenance and retention semantics
+- custom metadata filters
+- the deterministic removal prompt workflow
+- safety rules for using `code_sunset` as evidence during removal work
 
 ## Host App Responsibilities
 
