@@ -1,7 +1,9 @@
 # code_sunset
 
-[![Tests: Minitest](https://img.shields.io/badge/tests-Minitest-0F766E?style=flat-square)](https://github.com/sdglhm/code_sunset)
-[![Runner: rails test](https://img.shields.io/badge/runner-rails%20test-D97706?style=flat-square)](https://github.com/sdglhm/code_sunset)
+[![CI](https://github.com/sdglhm/code_sunset/actions/workflows/ci.yml/badge.svg)](https://github.com/sdglhm/code_sunset/actions/workflows/ci.yml)
+[![Gem Version](https://badge.fury.io/rb/code_sunset.svg)](https://rubygems.org/gems/code_sunset)
+[![Gem Downloads](https://img.shields.io/gem/dt/code_sunset.svg)](https://rubygems.org/gems/code_sunset)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/sdglhm/code_sunset/blob/main/MIT-LICENSE)
 
 ![Code Sunset logo](app/assets/images/code_sunset/logo-light.png)
 
